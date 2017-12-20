@@ -31,8 +31,8 @@ unsigned int bvalue(unsigned int method, unsigned long node_id) {
 queue<int> *Q = new queue<int>(), *R = new queue<int>();
 vector<set<pair<int, int>>> N; // set<waga - nr sasiada>
 vector<int> mapping; // new node nr -> node nr
-set<pair<int, int>> S[MAX]; // set<waga - nr sasiada>
-set<int> T[MAX]; // nr sasiada
+set<pair<int, int>> *S; // set<waga - nr sasiada>
+set<int> *T; // nr sasiada
 //set<pair<int, int>>::reverse_iterator lastProcessed[MAX];
 
 void readGraphAndPrepare(char* fileName) {
@@ -60,8 +60,6 @@ void readGraphAndPrepare(char* fileName) {
     N[itFrom->second].insert({w, itTo->second});
     N[itTo->second].insert({w, itFrom->second});
   }
-  for (int i = 0; i < newNodeNr; i++)
-    Q->push(i);
 }
 
 inline int sLast(int x, int method) {
@@ -110,40 +108,73 @@ int sum() {
 int main(int argc, char** argv) {
   auto t1 = std::chrono::high_resolution_clock::now();
   //std::ios_base::sync_with_stdio(0); TODO
-  int method = atoi(argv[3]); // bedziemy iterowac
+  int blimit = atoi(argv[3]); // bedziemy iterowac
   readGraphAndPrepare(argv[2]);
+  bool firstRound;
+  for (int method = 0; method <= blimit; method++) {
+    S = new set<pair<int, int>>[N.size()];
+    T = new set<int>[N.size()];
+    firstRound = true;
+    Q->push(0);
 
-  while (!Q->empty()) {
     while (!Q->empty()) {
-      int curr = Q->front();
-      //cout << "Tera: " << curr << "\n";
-      Q->pop();
+      if (firstRound) {
+        for (unsigned int curr = 0; curr < N.size(); curr++) {
+          //cout << "Tera: " << curr << "\n";
+          while (T[curr].size() < bvalue(method, mapping[curr])) {
+            auto x = findMax(curr, method);
+            if (x == N[curr].rend())
+              break;
+            //cout << "\tZnalazlem: " << x->second << "\n";
 
-      while (T[curr].size() < bvalue(method, mapping[curr])) {
-        auto x = findMax(curr, method);
-        if (x == N[curr].rend())
-          break;
-        //cout << "\tZnalazlem: " << x->second << "\n";
+            int y = sLast(x->second, method);
+            S[x->second].insert({x->first, curr});
+            T[curr].insert(x->second);
 
-        int y = sLast(x->second, method);
-        S[x->second].insert({x->first, curr});
-        T[curr].insert(x->second);
+            if (y != -1) {
+              S[x->second].erase(S[x->second].begin());
+              T[y].erase(x->second);
+              //cout << "alert!";
+              R->push(y);
+            }
+          }
+        }
+        firstRound = false;
+      } else {
+        while (!Q->empty()) {
+          int curr = Q->front();
+          //cout << "Tera: " << curr << "\n";
+          Q->pop();
 
-        if (y != -1) {
-          S[x->second].erase(S[x->second].begin());
-          T[y].erase(x->second);
-          //cout << "alert!";
-          R->push(y);
+          while (T[curr].size() < bvalue(method, mapping[curr])) {
+            auto x = findMax(curr, method);
+            if (x == N[curr].rend())
+              break;
+            //cout << "\tZnalazlem: " << x->second << "\n";
+
+            int y = sLast(x->second, method);
+            S[x->second].insert({x->first, curr});
+            T[curr].insert(x->second);
+
+            if (y != -1) {
+              S[x->second].erase(S[x->second].begin());
+              T[y].erase(x->second);
+              //cout << "alert!";
+              R->push(y);
+            }
+          }
         }
       }
-    }
 
-    delete(Q);
-    Q = R;
-    R = new queue<int>();
+      delete Q;
+      Q = R;
+      R = new queue<int>();
+    }
+    cout << sum() / 2 << "\n";
+    delete [] S;
+    delete [] T;
   }
 
-  cout << "sum: " << sum() / 2 << "\n";
   cout << "time: " << std::chrono::duration_cast<std::chrono::nanoseconds>(
     std::chrono::high_resolution_clock::now() - t1).count() / (double)1000000000 << "\n";
 }
