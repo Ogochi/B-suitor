@@ -33,7 +33,7 @@ vector<set<pair<int, int>>> N; // set<waga - nr sasiada>
 vector<int> mapping; // new node nr -> node nr
 set<pair<int, int>> *S; // set<waga - nr sasiada>
 set<int> *T; // nr sasiada
-//set<pair<int, int>>::reverse_iterator lastProcessed[MAX];
+set<pair<int, int>>::reverse_iterator *lastProcessed;
 
 void readGraphAndPrepare(char* fileName) {
   map<int, int> helper; // node nr - new node nr
@@ -77,14 +77,17 @@ inline int wSLast(int x, int method) {
 }
 
 auto findMax(int curr, int method) {
-  auto i = N[curr].rbegin();
+  auto i = lastProcessed[curr];
   while (i != N[curr].rend()) {
     if (T[curr].find(i->second) == T[curr].end())
       if (i->first > wSLast(i->second, method) ||
-          (wSLast(i->second, method) == i->first && mapping[i->second] > mapping[sLast(i->second, method)]))
+          (wSLast(i->second, method) == i->first && mapping[i->second] > mapping[sLast(i->second, method)])) {
+        lastProcessed[curr] = i;
         return i;
+      }
     i++;
   }
+  lastProcessed[curr] = N[curr].rend();
   return N[curr].rend();
 }
 
@@ -114,6 +117,9 @@ int main(int argc, char** argv) {
   for (int method = 0; method <= blimit; method++) {
     S = new set<pair<int, int>>[N.size()];
     T = new set<int>[N.size()];
+    lastProcessed = new set<pair<int, int>>::reverse_iterator[N.size()];
+    for (unsigned int i = 0; i < N.size(); i++)
+      lastProcessed[i] = N[i].rbegin();
     firstRound = true;
     Q->push(0);
 
@@ -173,6 +179,7 @@ int main(int argc, char** argv) {
     cout << sum() / 2 << "\n";
     delete [] S;
     delete [] T;
+    delete [] lastProcessed;
   }
 
   cout << "time: " << std::chrono::duration_cast<std::chrono::nanoseconds>(
