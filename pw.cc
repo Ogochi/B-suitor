@@ -123,6 +123,24 @@ int sum() {
   return sum;
 }
 
+void processNode(int curr, int method) {
+  while (T[curr].size() < bvalue(method, mapping[curr])) {
+    auto x = findMax(curr, method);
+    if (x == N[curr].rend())
+      break;
+
+    int y = sLast(x->second, method);
+    S[x->second].insert({x->first, curr});
+    T[curr].insert(x->second);
+
+    if (y != -1) {
+      S[x->second].erase(S[x->second].begin());
+      T[y].erase(x->second);
+      R->push(y);
+    }
+  }
+}
+
 int main(int argc, char** argv) {
   auto t1 = std::chrono::high_resolution_clock::now();
   //std::ios_base::sync_with_stdio(0); TODO
@@ -140,50 +158,14 @@ int main(int argc, char** argv) {
 
     while (!Q->empty()) {
       if (firstRound) {
-        for (unsigned int curr = 0; curr < N.size(); curr++) {
-          //cout << "Tera: " << curr << "\n";
-          while (T[curr].size() < bvalue(method, mapping[curr])) {
-            auto x = findMax(curr, method);
-            if (x == N[curr].rend())
-              break;
-            //cout << "\tZnalazlem: " << x->second << "\n";
-
-            int y = sLast(x->second, method);
-            S[x->second].insert({x->first, curr});
-            T[curr].insert(x->second);
-
-            if (y != -1) {
-              S[x->second].erase(S[x->second].begin());
-              T[y].erase(x->second);
-              //cout << "alert!";
-              R->push(y);
-            }
-          }
-        }
+        for (unsigned int curr = 0; curr < N.size(); curr++)
+          processNode(curr, method);
         firstRound = false;
       } else {
         while (!Q->empty()) {
           int curr = Q->front();
-          //cout << "Tera: " << curr << "\n";
           Q->pop();
-
-          while (T[curr].size() < bvalue(method, mapping[curr])) {
-            auto x = findMax(curr, method);
-            if (x == N[curr].rend())
-              break;
-            //cout << "\tZnalazlem: " << x->second << "\n";
-
-            int y = sLast(x->second, method);
-            S[x->second].insert({x->first, curr});
-            T[curr].insert(x->second);
-
-            if (y != -1) {
-              S[x->second].erase(S[x->second].begin());
-              T[y].erase(x->second);
-              //cout << "alert!";
-              R->push(y);
-            }
-          }
+          processNode(curr, method);
         }
       }
 

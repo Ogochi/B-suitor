@@ -4,7 +4,7 @@ project (MIMUW-CPCPP-lab1 CXX)
 find_package ( Threads REQUIRED )
 
 set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_FLAGS "-g -Wall")
+set(CMAKE_CXX_FLAGS "-g -O2 -Wall")
 
 # http://stackoverflow.com/questions/10555706/
 macro (add_executable _name)
