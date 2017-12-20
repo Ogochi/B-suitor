@@ -7,6 +7,7 @@
 #include <queue>
 #include <vector>
 #include <string>
+#include <chrono>
 #define MAX 1000000
 
 using std::cout;
@@ -83,7 +84,7 @@ auto findMax(int curr, int method) {
 int main(int argc, char** argv) {
   //std::ios_base::sync_with_stdio(0);
   int method = atoi(argv[3]); // bedziemy iterowac
-
+  auto t1 = std::chrono::high_resolution_clock::now();
   readGraphAndPrepare(argv[2]);
 
   while (!Q->empty()) {
@@ -130,4 +131,6 @@ int main(int argc, char** argv) {
     cout << "\n";
   }
   cout << "sum: " << sum / 2 << "\n";
+  cout << "time: " << std::chrono::duration_cast<std::chrono::nanoseconds>(
+    std::chrono::high_resolution_clock::now() - t1).count() / (double)1000000000 << "\n";
 }
