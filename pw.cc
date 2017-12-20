@@ -16,7 +16,7 @@ using std::set;
 using std::queue;
 using std::pair;
 using std::vector;
-
+/*
 unsigned int bvalue(unsigned int method, unsigned long node_id) {
     switch (method) {
     case 0: return 1;
@@ -26,12 +26,27 @@ unsigned int bvalue(unsigned int method, unsigned long node_id) {
         default: return 1;
         }
     }
+} */
+unsigned int bvalue(unsigned int method, unsigned long node_id) {
+  switch (method) {
+    default: return (2* node_id + method) % 10;
+    case 0: return 4;
+    case 1: return 7;
+  }
 }
 
 queue<int> *Q = new queue<int>(), *R = new queue<int>();
-vector<set<pair<int, int>>> N; // set<waga - nr sasiada>
 vector<int> mapping; // new node nr -> node nr
-set<pair<int, int>> *S; // set<waga - nr sasiada>
+struct setComp {
+  bool operator() (const pair<int, int>& a, const pair<int, int>& b) {
+    if (a.first == b.first)
+      return mapping[a.second] < mapping[b.second];
+    else
+      return a.first < b.first;
+  }
+};
+vector<set<pair<int, int>, setComp>> N; // set<waga - nr sasiada>
+set<pair<int, int>, setComp> *S; // set<waga - nr sasiada>
 set<int> *T; // nr sasiada
 set<pair<int, int>>::reverse_iterator *lastProcessed;
 
@@ -40,19 +55,19 @@ void readGraphAndPrepare(char* fileName) {
   int newNodeNr = 0;
   std::ifstream infile(fileName);
 
-  while (infile.peek() == '#')
+  while(infile.peek() == '#')
     infile.ignore(std::numeric_limits<std::streamsize>::max(), infile.widen('\n'));
 
   int from, to, w;
   while (infile >> from >> to >> w) {
     auto itFrom = helper.find(from), itTo = helper.find(to);
     if (itFrom == helper.end()) {
-      N.push_back(set<pair<int, int>>());
+      N.push_back(set<pair<int, int>, setComp>());
       mapping.push_back(from);
       itFrom = helper.insert({from, newNodeNr++}).first;
     }
     if (itTo == helper.end()) {
-      N.push_back(set<pair<int, int>>());
+      N.push_back(set<pair<int, int>, setComp>());
       mapping.push_back(to);
       itTo = helper.insert({to, newNodeNr++}).first;
     }
@@ -79,11 +94,11 @@ inline int wSLast(int x, int method) {
 auto findMax(int curr, int method) {
   auto i = lastProcessed[curr];
   while (i != N[curr].rend()) {
-    if (T[curr].find(i->second) == T[curr].end())
+    if (T[curr].find(i->second) == T[curr].end() && bvalue(method, mapping[i->second]) != 0)
       if (i->first > wSLast(i->second, method) ||
-          (wSLast(i->second, method) == i->first && mapping[i->second] > mapping[sLast(i->second, method)])) {
-        lastProcessed[curr] = i;
-        return i;
+          (wSLast(i->second, method) == i->first && mapping[curr] > mapping[sLast(i->second, method)])) {
+        lastProcessed[curr] = ++i;
+        return --i;
       }
     i++;
   }
@@ -93,7 +108,7 @@ auto findMax(int curr, int method) {
 
 int sum() {
   int sum = 0;
-  for (int i = 0; i <= 5; i++) {
+  for (unsigned int i = 0; i < N.size(); i++) {
     //cout << i << ":\n\tS: ";
     for (auto j : S[i]) {
       //cout << "(" << j.first << ", " << j.second << ")";
@@ -115,7 +130,7 @@ int main(int argc, char** argv) {
   readGraphAndPrepare(argv[2]);
   bool firstRound;
   for (int method = 0; method <= blimit; method++) {
-    S = new set<pair<int, int>>[N.size()];
+    S = new set<pair<int, int>, setComp>[N.size()];
     T = new set<int>[N.size()];
     lastProcessed = new set<pair<int, int>>::reverse_iterator[N.size()];
     for (unsigned int i = 0; i < N.size(); i++)
@@ -181,6 +196,8 @@ int main(int argc, char** argv) {
     delete [] T;
     delete [] lastProcessed;
   }
+  delete Q;
+  delete R;
 
   cout << "time: " << std::chrono::duration_cast<std::chrono::nanoseconds>(
     std::chrono::high_resolution_clock::now() - t1).count() / (double)1000000000 << "\n";
