@@ -30,13 +30,14 @@ unsigned int bvalue(unsigned int method, unsigned long node_id) {
 
 queue<int> *Q = new queue<int>(), *R = new queue<int>();
 vector<set<pair<int, int>>> N; // set<waga - nr sasiada>
+vector<int> mapping; // new node nr -> node nr
 set<pair<int, int>> S[MAX]; // set<waga - nr sasiada>
 set<int> T[MAX]; // nr sasiada
-map<int, int> helper; // node nr - new node nr
-int newNodeNr = 0;
 //set<pair<int, int>>::reverse_iterator lastProcessed[MAX];
 
 void readGraphAndPrepare(char* fileName) {
+  map<int, int> helper; // node nr - new node nr
+  int newNodeNr = 0;
   std::ifstream infile(fileName);
 
   while (infile.peek() == '#')
@@ -44,32 +45,34 @@ void readGraphAndPrepare(char* fileName) {
 
   int from, to, w;
   while (infile >> from >> to >> w) {
-    if (helper.find(from) == helper.end()) {
+    auto itFrom = helper.find(from), itTo = helper.find(to);
+    if (itFrom == helper.end()) {
       N.push_back(set<pair<int, int>>());
-      helper.insert({from, newNodeNr++});
+      mapping.push_back(from);
+      itFrom = helper.insert({from, newNodeNr++}).first;
     }
-    if (helper.find(to) == helper.end()) {
+    if (itTo == helper.end()) {
       N.push_back(set<pair<int, int>>());
-      helper.insert({to, newNodeNr++});
+      mapping.push_back(to);
+      itTo = helper.insert({to, newNodeNr++}).first;
     }
 
-    int currFrom = helper[from], currTo = helper[to];
-    N[currFrom].insert({w, currTo});
-    N[currTo].insert({w, currFrom});
+    N[itFrom->second].insert({w, itTo->second});
+    N[itTo->second].insert({w, itFrom->second});
   }
   for (int i = 0; i < newNodeNr; i++)
     Q->push(i);
 }
 
 inline int sLast(int x, int method) {
-  if (bvalue(method, x) == S[x].size())
+  if (bvalue(method, mapping[x]) == S[x].size())
     return S[x].begin()->second;
   else
     return -1;
 }
 
 inline int wSLast(int x, int method) {
-  if (bvalue(method, x) == S[x].size())
+  if (bvalue(method, mapping[x]) == S[x].size())
     return S[x].begin()->first;
   else
     return -1;
@@ -80,7 +83,7 @@ auto findMax(int curr, int method) {
   while (i != N[curr].rend()) {
     if (T[curr].find(i->second) == T[curr].end())
       if (i->first > wSLast(i->second, method) ||
-          (wSLast(i->second, method) == i->first && i->second > sLast(i->second, method)))
+          (wSLast(i->second, method) == i->first && mapping[i->second] > mapping[sLast(i->second, method)]))
         return i;
     i++;
   }
@@ -116,7 +119,7 @@ int main(int argc, char** argv) {
       //cout << "Tera: " << curr << "\n";
       Q->pop();
 
-      while (T[curr].size() < bvalue(method, curr)) {
+      while (T[curr].size() < bvalue(method, mapping[curr])) {
         auto x = findMax(curr, method);
         if (x == N[curr].rend())
           break;
