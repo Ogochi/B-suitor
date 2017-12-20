@@ -54,8 +54,6 @@ void readGraphAndPrepare(char* fileName) {
 }
 
 inline int sLast(int x, int method) {
-  if (x == 0)
-    cout << "slast: " << bvalue(method, x) << S[x].size() << "\n";
   if (bvalue(method, x) == S[x].size())
     return S[x].begin()->second;
   else
@@ -81,23 +79,40 @@ auto findMax(int curr, int method) {
   return N[curr].rend();
 }
 
+int sum() {
+  int sum = 0;
+  for (int i = 0; i <= 5; i++) {
+    //cout << i << ":\n\tS: ";
+    for (auto j : S[i]) {
+      //cout << "(" << j.first << ", " << j.second << ")";
+      sum += j.first;
+    }/*
+    cout << "\n\tT: ";
+    for (auto j : T[i]) {
+      cout << j << " ";
+    }
+    cout << "\n";*/
+  }
+  return sum;
+}
+
 int main(int argc, char** argv) {
-  //std::ios_base::sync_with_stdio(0);
-  int method = atoi(argv[3]); // bedziemy iterowac
   auto t1 = std::chrono::high_resolution_clock::now();
+  //std::ios_base::sync_with_stdio(0); TODO
+  int method = atoi(argv[3]); // bedziemy iterowac
   readGraphAndPrepare(argv[2]);
 
   while (!Q->empty()) {
     while (!Q->empty()) {
       int curr = Q->front();
-      cout << "Tera: " << curr << "\n";
+      //cout << "Tera: " << curr << "\n";
       Q->pop();
 
       while (T[curr].size() < bvalue(method, curr)) {
         auto x = findMax(curr, method);
         if (x == N[curr].rend())
           break;
-        cout << "\tZnalazlem: " << x->second << "\n";
+        //cout << "\tZnalazlem: " << x->second << "\n";
 
         int y = sLast(x->second, method);
         S[x->second].insert({x->first, curr});
@@ -106,31 +121,18 @@ int main(int argc, char** argv) {
         if (y != -1) {
           S[x->second].erase(S[x->second].begin());
           T[y].erase(x->second);
-          cout << "alert!";
+          //cout << "alert!";
           R->push(y);
         }
       }
     }
-    cout << "a " << R->size() << "\n";
+
     delete(Q);
     Q = R;
     R = new queue<int>();
   }
 
-  int sum = 0;
-  for (int i = 0; i <= 5; i++) {
-    cout << i << ":\n\tS: ";
-    for (auto j : S[i]) {
-      cout << "(" << j.first << ", " << j.second << ")";
-      sum += j.first;
-    }
-    cout << "\n\tT: ";
-    for (auto j : T[i]) {
-      cout << j << " ";
-    }
-    cout << "\n";
-  }
-  cout << "sum: " << sum / 2 << "\n";
+  cout << "sum: " << sum() / 2 << "\n";
   cout << "time: " << std::chrono::duration_cast<std::chrono::nanoseconds>(
     std::chrono::high_resolution_clock::now() - t1).count() / (double)1000000000 << "\n";
 }
