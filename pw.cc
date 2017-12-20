@@ -29,8 +29,12 @@ unsigned int bvalue(unsigned int method, unsigned long node_id) {
 }
 
 queue<int> *Q = new queue<int>(), *R = new queue<int>();
-set<pair<int, int>> S[MAX], N[MAX]; // set<waga - nr sasiada>
+vector<set<pair<int, int>>> N; // set<waga - nr sasiada>
+set<pair<int, int>> S[MAX]; // set<waga - nr sasiada>
 set<int> T[MAX]; // nr sasiada
+map<int, int> helper; // node nr - new node nr
+int newNodeNr = 0;
+//set<pair<int, int>>::reverse_iterator lastProcessed[MAX];
 
 void readGraphAndPrepare(char* fileName) {
   std::ifstream infile(fileName);
@@ -39,18 +43,22 @@ void readGraphAndPrepare(char* fileName) {
     infile.ignore(std::numeric_limits<std::streamsize>::max(), infile.widen('\n'));
 
   int from, to, w;
-  bool added[MAX] = {false};
   while (infile >> from >> to >> w) {
-    if (!added[from])
-      Q->push(from);
-    if (!added[to])
-      Q->push(to);
-    added[from] = true;
-    added[to] = true;
+    if (helper.find(from) == helper.end()) {
+      N.push_back(set<pair<int, int>>());
+      helper.insert({from, newNodeNr++});
+    }
+    if (helper.find(to) == helper.end()) {
+      N.push_back(set<pair<int, int>>());
+      helper.insert({to, newNodeNr++});
+    }
 
-    N[from].insert({w, to});
-    N[to].insert({w, from});
+    int currFrom = helper[from], currTo = helper[to];
+    N[currFrom].insert({w, currTo});
+    N[currTo].insert({w, currFrom});
   }
+  for (int i = 0; i < newNodeNr; i++)
+    Q->push(i);
 }
 
 inline int sLast(int x, int method) {
