@@ -18,7 +18,7 @@ using std::set;
 using std::queue;
 using std::pair;
 using std::vector;
-
+/*
 unsigned int bvalue(unsigned int method, unsigned long node_id) {
     switch (method) {
     case 0: return 1;
@@ -28,7 +28,7 @@ unsigned int bvalue(unsigned int method, unsigned long node_id) {
         default: return 1;
         }
     }
-} /*
+} */
 unsigned int bvalue(unsigned int method, unsigned long node_id) {
   switch (method) {
     default: return (2* node_id + method) % 10;
@@ -36,7 +36,7 @@ unsigned int bvalue(unsigned int method, unsigned long node_id) {
     case 1: return 7;
   }
 }
-*/
+
 queue<int> *Q = new queue<int>(), *R = new queue<int>();
 vector<int> mapping; // new node nr -> node nr
 struct setComp {
@@ -217,8 +217,8 @@ int main(int argc, char** argv) {
     cout << sum() / 2 << "\n";
     delete [] S;
     delete [] T;
-    delete [] lastProcessed;
   }
+  delete [] lastProcessed;
   delete Q;
   delete R;
 
