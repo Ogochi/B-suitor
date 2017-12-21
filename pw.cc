@@ -8,6 +8,8 @@
 #include <vector>
 #include <string>
 #include <chrono>
+#include <mutex>
+#include <algorithm>
 #define MAX 1000000
 
 using std::cout;
@@ -16,7 +18,7 @@ using std::set;
 using std::queue;
 using std::pair;
 using std::vector;
-/*
+
 unsigned int bvalue(unsigned int method, unsigned long node_id) {
     switch (method) {
     case 0: return 1;
@@ -26,7 +28,7 @@ unsigned int bvalue(unsigned int method, unsigned long node_id) {
         default: return 1;
         }
     }
-} */
+} /*
 unsigned int bvalue(unsigned int method, unsigned long node_id) {
   switch (method) {
     default: return (2* node_id + method) % 10;
@@ -34,7 +36,7 @@ unsigned int bvalue(unsigned int method, unsigned long node_id) {
     case 1: return 7;
   }
 }
-
+*/
 queue<int> *Q = new queue<int>(), *R = new queue<int>();
 vector<int> mapping; // new node nr -> node nr
 struct setComp {
@@ -94,7 +96,7 @@ inline int wSLast(int x, int method) {
 auto findMax(int curr, int method) {
   auto i = lastProcessed[curr];
   while (i != N[curr].rend()) {
-    if (T[curr].find(i->second) == T[curr].end() && bvalue(method, mapping[i->second]) != 0)
+    if (T[curr].find(i->second) == T[curr].end() && bvalue(method, mapping[i->second]) != 0) // TODO usunac != 0
       if (i->first > wSLast(i->second, method) ||
           (wSLast(i->second, method) == i->first && mapping[curr] > mapping[sLast(i->second, method)])) {
         lastProcessed[curr] = ++i;
@@ -123,51 +125,90 @@ int sum() {
   return sum;
 }
 
-void processNode(int curr, int method) {
-  while (T[curr].size() < bvalue(method, mapping[curr])) {
-    auto x = findMax(curr, method);
-    if (x == N[curr].rend())
+std::mutex mut1, mut2;
+std::atomic<int> nodesQueue;
+
+void processNode(int method, bool isFirstRound) {
+  while (true) {
+    unsigned int curr;
+    bool canProcess = false;
+
+    if (isFirstRound) {
+      curr = nodesQueue.fetch_add(1);
+      if (curr < N.size()) {
+        canProcess = true;
+      }
+    } else {
+      mut1.lock();
+      if (!Q->empty()) {
+        curr = Q->front();
+        Q->pop();
+        canProcess = true;
+      }
+      mut1.unlock();
+    }
+
+    if (!canProcess)
       break;
 
-    int y = sLast(x->second, method);
-    S[x->second].insert({x->first, curr});
-    T[curr].insert(x->second);
+    while (T[curr].size() < bvalue(method, mapping[curr])) {
+      auto x = findMax(curr, method);
+      if (x == N[curr].rend())
+        break;
 
-    if (y != -1) {
-      S[x->second].erase(S[x->second].begin());
-      T[y].erase(x->second);
-      R->push(y);
-    }
+      mut2.lock();
+      // is still eligible?
+      if (x->first > wSLast(x->second, method) ||
+          (wSLast(x->second, method) == x->first && mapping[curr] > mapping[sLast(x->second, method)])) {
+        int y = sLast(x->second, method);
+        S[x->second].insert({x->first, curr});
+        T[curr].insert(x->second);
+
+        if (y != -1) {
+          S[x->second].erase(S[x->second].begin());
+          T[y].erase(x->second);
+          R->push(y);
+        }
+      }
+
+      mut2.unlock();
+     }
   }
 }
 
 int main(int argc, char** argv) {
   auto t1 = std::chrono::high_resolution_clock::now();
-  //std::ios_base::sync_with_stdio(0); TODO
-  int blimit = atoi(argv[3]); // bedziemy iterowac
+  //std::ios_base::sync_with_stdio(0);// TODO
+  int blimit = atoi(argv[3]);
+  int threadsLimit = atoi(argv[1]);
   readGraphAndPrepare(argv[2]);
-  bool firstRound;
+  lastProcessed = new set<pair<int, int>>::reverse_iterator[N.size()];
+
   for (int method = 0; method <= blimit; method++) {
     S = new set<pair<int, int>, setComp>[N.size()];
     T = new set<int>[N.size()];
-    lastProcessed = new set<pair<int, int>>::reverse_iterator[N.size()];
     for (unsigned int i = 0; i < N.size(); i++)
       lastProcessed[i] = N[i].rbegin();
-    firstRound = true;
-    Q->push(0);
+    Q->push(-1);
+    bool firstRound = true;
+    nodesQueue = 0;
 
     while (!Q->empty()) {
-      if (firstRound) {
-        for (unsigned int curr = 0; curr < N.size(); curr++)
-          processNode(curr, method);
-        firstRound = false;
-      } else {
-        while (!Q->empty()) {
-          int curr = Q->front();
-          Q->pop();
-          processNode(curr, method);
-        }
-      }
+      int howManyThreadsToMake;
+      if (firstRound)
+        howManyThreadsToMake = std::min((int)N.size() - 1, threadsLimit - 1);
+      else
+        howManyThreadsToMake = std::min((int)Q->size(), threadsLimit - 1);
+
+      std::thread threads[howManyThreadsToMake];
+      for (int i = 0; i < howManyThreadsToMake; i++)
+        threads[i] = std::thread{ [method, firstRound]{processNode(method, firstRound); }};
+
+      processNode(method, firstRound);
+      firstRound = false;
+
+      for (int i = 0; i < howManyThreadsToMake; i++)
+        threads[i].join();
 
       delete Q;
       Q = R;
