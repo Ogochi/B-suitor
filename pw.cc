@@ -49,7 +49,7 @@ struct setComp {
 };
 vector<set<pair<int, int>, setComp>> N; // set<waga - nr sasiada>
 set<pair<int, int>, setComp> *S; // set<waga - nr sasiada>
-set<int> *T; // nr sasiada
+unsigned int *T; // ilosc sasiadow
 set<pair<int, int>>::reverse_iterator *lastProcessed;
 
 void readGraphAndPrepare(char* fileName) {
@@ -96,7 +96,7 @@ inline int wSLast(int x, int method) {
 auto findMax(int curr, int method) {
   auto i = lastProcessed[curr];
   while (i != N[curr].rend()) {
-    if (T[curr].find(i->second) == T[curr].end() && bvalue(method, mapping[i->second]) != 0) // TODO usunac != 0
+    if (S[i->second].find({i->first, curr}) == S[i->second].end() && bvalue(method, mapping[i->second]) != 0) // TODO usunac != 0
       if (i->first > wSLast(i->second, method) ||
           (wSLast(i->second, method) == i->first && mapping[curr] > mapping[sLast(i->second, method)])) {
         lastProcessed[curr] = ++i;
@@ -151,7 +151,7 @@ void processNode(int method, bool isFirstRound) {
       break;
     //if (was2[curr]) cout << "alert!\n"; else was2[curr] = true;
 
-    while (T[curr].size() < bvalue(method, mapping[curr])) {
+    while (T[curr] < bvalue(method, mapping[curr])) {
       auto x = findMax(curr, method);
       if (x == N[curr].rend())
         break;
@@ -165,13 +165,13 @@ void processNode(int method, bool isFirstRound) {
       int y = sLast(x->second, method);
       // is still eligible?
       if (x->first > wSLast(x->second, method) ||
-          (wSLast(x->second, method) == x->first && mapping[curr] > mapping[sLast(x->second, method)])) {
+          (wSLast(x->second, method) == x->first && mapping[curr] > mapping[y])) {
         S[x->second].insert({x->first, curr});
-        T[curr].insert(x->second);
+        T[curr]++;
 
         if (y != -1) {
           S[x->second].erase(S[x->second].begin());
-          T[y].erase(x->second);
+          T[y]--;
           if (!inR[y]) {
             R->push_back(y);
             inR[y] = true;
@@ -194,7 +194,7 @@ int main(int argc, char** argv) {
 
   for (int method = 0; method <= blimit; method++) {
     S = new set<pair<int, int>, setComp>[N.size()];
-    T = new set<int>[N.size()];
+    T = new unsigned int[N.size()]{0};
     for (unsigned int i = 0; i < N.size(); i++)
       lastProcessed[i] = N[i].rbegin();
     Q->push_back(-1);
