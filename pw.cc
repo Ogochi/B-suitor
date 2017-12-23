@@ -37,7 +37,7 @@ unsigned int bvalue(unsigned int method, unsigned long node_id) {
   }
 }
 
-queue<int> *Q = new queue<int>(), *R = new queue<int>();
+vector<int> *Q = new vector<int>(), *R = new vector<int>();
 vector<int> mapping; // new node nr -> node nr
 struct setComp {
   bool operator() (const pair<int, int>& a, const pair<int, int>& b) {
@@ -125,8 +125,9 @@ int sum() {
   return sum;
 }
 
-std::mutex mut1, mut2;
+std::atomic<bool> spinLock;
 std::atomic<int> nodesQueue;
+bool *inR;
 
 void processNode(int method, bool isFirstRound) {
   while (true) {
@@ -139,39 +140,46 @@ void processNode(int method, bool isFirstRound) {
         canProcess = true;
       }
     } else {
-      mut1.lock();
-      if (!Q->empty()) {
-        curr = Q->front();
-        Q->pop();
+      curr = nodesQueue.fetch_add(1);
+      if (curr < Q->size()) {
+        curr = (*Q)[curr];
         canProcess = true;
       }
-      mut1.unlock();
     }
 
     if (!canProcess)
       break;
+    //if (was2[curr]) cout << "alert!\n"; else was2[curr] = true;
 
     while (T[curr].size() < bvalue(method, mapping[curr])) {
       auto x = findMax(curr, method);
       if (x == N[curr].rend())
         break;
 
-      mut2.lock();
+      bool expected;
+      do {
+        expected = true;
+        spinLock.compare_exchange_weak(expected, false);
+      } while (expected == false);
+
+      int y = sLast(x->second, method);
       // is still eligible?
       if (x->first > wSLast(x->second, method) ||
           (wSLast(x->second, method) == x->first && mapping[curr] > mapping[sLast(x->second, method)])) {
-        int y = sLast(x->second, method);
         S[x->second].insert({x->first, curr});
         T[curr].insert(x->second);
 
         if (y != -1) {
           S[x->second].erase(S[x->second].begin());
           T[y].erase(x->second);
-          R->push(y);
+          if (!inR[y]) {
+            R->push_back(y);
+            inR[y] = true;
+          }
         }
       }
 
-      mut2.unlock();
+      spinLock = true;
      }
   }
 }
@@ -189,12 +197,15 @@ int main(int argc, char** argv) {
     T = new set<int>[N.size()];
     for (unsigned int i = 0; i < N.size(); i++)
       lastProcessed[i] = N[i].rbegin();
-    Q->push(-1);
+    Q->push_back(-1);
     bool firstRound = true;
-    nodesQueue = 0;
 
     while (!Q->empty()) {
+      inR = new bool[N.size()]{0};
       int howManyThreadsToMake;
+      nodesQueue = 0;
+      spinLock = true;
+
       if (firstRound)
         howManyThreadsToMake = std::min((int)N.size() - 1, threadsLimit - 1);
       else
@@ -212,9 +223,10 @@ int main(int argc, char** argv) {
 
       delete Q;
       Q = R;
-      R = new queue<int>();
+      R = new vector<int>();
     }
     cout << sum() / 2 << "\n";
+    delete [] inR;
     delete [] S;
     delete [] T;
   }
