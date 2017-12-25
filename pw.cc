@@ -125,7 +125,8 @@ int sum() {
   return sum;
 }
 
-std::atomic<bool> spinLock;
+std::atomic<bool> lockR;
+std::atomic<bool> *spinLock;
 std::atomic<int> nodesQueue;
 bool *inR;
 
@@ -159,27 +160,36 @@ void processNode(int method, bool isFirstRound) {
       bool expected;
       do {
         expected = true;
-        spinLock.compare_exchange_weak(expected, false);
+        spinLock[x->second].compare_exchange_weak(expected, false);
       } while (expected == false);
 
       int y = sLast(x->second, method);
       // is still eligible?
       if (x->first > wSLast(x->second, method) ||
           (wSLast(x->second, method) == x->first && mapping[curr] > mapping[y])) {
-        S[x->second].insert({x->first, curr});
         T[curr]++;
+        if (y != -1)
+          T[y]--;
+        S[x->second].insert({x->first, curr});
+        if (y != -1)
+          S[x->second].erase(S[x->second].begin());
+        spinLock[x->second] = true;
+
 
         if (y != -1) {
-          S[x->second].erase(S[x->second].begin());
-          T[y]--;
+          do {
+            expected = true;
+            lockR.compare_exchange_weak(expected, false);
+          } while (expected == false);
           if (!inR[y]) {
             R->push_back(y);
             inR[y] = true;
           }
+          lockR = true;
         }
       }
-
-      spinLock = true;
+        else
+      spinLock[x->second] = true;
      }
   }
 }
@@ -191,6 +201,10 @@ int main(int argc, char** argv) {
   int threadsLimit = atoi(argv[1]);
   readGraphAndPrepare(argv[2]);
   lastProcessed = new set<pair<int, int>>::reverse_iterator[N.size()];
+  lockR = true;
+  spinLock = new std::atomic<bool>[N.size()];
+  for (unsigned int i = 0; i < N.size(); i++)
+    spinLock[i] = true;
 
   for (int method = 0; method <= blimit; method++) {
     S = new set<pair<int, int>, setComp>[N.size()];
@@ -204,7 +218,6 @@ int main(int argc, char** argv) {
       inR = new bool[N.size()]{0};
       int howManyThreadsToMake;
       nodesQueue = 0;
-      spinLock = true;
 
       if (firstRound)
         howManyThreadsToMake = std::min((int)N.size() - 1, threadsLimit - 1);
@@ -230,6 +243,7 @@ int main(int argc, char** argv) {
     delete [] S;
     delete [] T;
   }
+  delete [] spinLock;
   delete [] lastProcessed;
   delete Q;
   delete R;
