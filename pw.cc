@@ -4,38 +4,17 @@
 #include <fstream>
 #include <map>
 #include <set>
-#include <queue>
 #include <vector>
 #include <string>
 #include <chrono>
-#include <mutex>
 #include <algorithm>
-#define MAX 1000000
 
 using std::cout;
 using std::map;
 using std::set;
-using std::queue;
 using std::pair;
 using std::vector;
-/*
-unsigned int bvalue(unsigned int method, unsigned long node_id) {
-    switch (method) {
-    case 0: return 1;
-    default: switch (node_id) {
-        case 0: return 2;
-        case 1: return 2;
-        default: return 1;
-        }
-    }
-} */
-unsigned int bvalue(unsigned int method, unsigned long node_id) {
-  switch (method) {
-    default: return (2* node_id + method) % 10;
-    case 0: return 4;
-    case 1: return 7;
-  }
-}
+using std::atomic;
 
 vector<int> *Q = new vector<int>(), *R = new vector<int>();
 vector<int> mapping; // new node nr -> node nr
@@ -109,25 +88,16 @@ auto findMax(int curr, int method) {
 
 int sum() {
   int sum = 0;
-  for (unsigned int i = 0; i < N.size(); i++) {
-    //cout << i << ":\n\tS: ";
-    for (auto j : S[i]) {
-      //cout << "(" << j.first << ", " << j.second << ")";
+  for (unsigned int i = 0; i < N.size(); i++)
+    for (auto j : S[i])
       sum += j.first;
-    }/*
-    cout << "\n\tT: ";
-    for (auto j : T[i]) {
-      cout << j << " ";
-    }
-    cout << "\n";*/
-  }
   return sum;
 }
 
-std::atomic<unsigned int> *T; // ilosc sasiadow
-std::atomic<bool> lockR;
-std::atomic<bool> *spinLock;
-std::atomic<int> nodesQueue;
+atomic<unsigned int> *T; // ilosc sasiadow
+atomic<bool> lockR;
+atomic<bool> *spinLock;
+atomic<int> nodesQueue;
 bool *inR;
 
 void processNode(int method, bool isFirstRound) {
@@ -150,7 +120,6 @@ void processNode(int method, bool isFirstRound) {
 
     if (!canProcess)
       break;
-    //if (was2[curr]) cout << "alert!\n"; else was2[curr] = true;
 
     while (T[curr] < bvalue(method, mapping[curr])) {
       auto x = findMax(curr, method);
@@ -196,14 +165,16 @@ void processNode(int method, bool isFirstRound) {
 
 int main(int argc, char** argv) {
   auto t1 = std::chrono::high_resolution_clock::now();
-  //std::ios_base::sync_with_stdio(0);// TODO
+  std::ios_base::sync_with_stdio(0);
+
   int blimit = atoi(argv[3]);
   int threadsLimit = atoi(argv[1]);
   readGraphAndPrepare(argv[2]);
-  lastProcessed = new set<pair<int, int>>::reverse_iterator[N.size()];
+
   lockR = true;
-  T = new std::atomic<unsigned int>[N.size()];
-  spinLock = new std::atomic<bool>[N.size()];
+  lastProcessed = new set<pair<int, int>>::reverse_iterator[N.size()];
+  T = new atomic<unsigned int>[N.size()];
+  spinLock = new atomic<bool>[N.size()];
   for (unsigned int i = 0; i < N.size(); i++)
     spinLock[i] = true;
 
