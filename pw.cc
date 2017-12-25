@@ -49,7 +49,6 @@ struct setComp {
 };
 vector<set<pair<int, int>, setComp>> N; // set<waga - nr sasiada>
 set<pair<int, int>, setComp> *S; // set<waga - nr sasiada>
-unsigned int *T; // ilosc sasiadow
 set<pair<int, int>>::reverse_iterator *lastProcessed;
 
 void readGraphAndPrepare(char* fileName) {
@@ -125,6 +124,7 @@ int sum() {
   return sum;
 }
 
+std::atomic<unsigned int> *T; // ilosc sasiadow
 std::atomic<bool> lockR;
 std::atomic<bool> *spinLock;
 std::atomic<int> nodesQueue;
@@ -202,13 +202,15 @@ int main(int argc, char** argv) {
   readGraphAndPrepare(argv[2]);
   lastProcessed = new set<pair<int, int>>::reverse_iterator[N.size()];
   lockR = true;
+  T = new std::atomic<unsigned int>[N.size()];
   spinLock = new std::atomic<bool>[N.size()];
   for (unsigned int i = 0; i < N.size(); i++)
     spinLock[i] = true;
 
   for (int method = 0; method <= blimit; method++) {
     S = new set<pair<int, int>, setComp>[N.size()];
-    T = new unsigned int[N.size()]{0};
+    for (unsigned int i = 0; i < N.size(); i++)
+      T[i] = 0;
     for (unsigned int i = 0; i < N.size(); i++)
       lastProcessed[i] = N[i].rbegin();
     Q->push_back(-1);
@@ -241,8 +243,8 @@ int main(int argc, char** argv) {
     cout << sum() / 2 << "\n";
     delete [] inR;
     delete [] S;
-    delete [] T;
   }
+  delete [] T;
   delete [] spinLock;
   delete [] lastProcessed;
   delete Q;
