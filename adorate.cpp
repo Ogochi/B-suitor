@@ -59,11 +59,25 @@ void readGraphAndPrepare(char* fileName) {
   }
 }
 
+atomic<bool> *removeSpinLock;
+
 inline pair<int, int> sLast(int x, int method) {
-  if (bvalue(method, mapping[x]) == S[x].size())
-    return *(S[x].begin());
+  pair<int, int> result;
+  bool expected;
+  do {
+    expected = true;
+    removeSpinLock[x].compare_exchange_weak(expected, false);
+  } while (expected == false);
+
+  if (bvalue(method, mapping[x]) < S[x].size())
+    result = *(++(S[x].begin()));
+  else if (bvalue(method, mapping[x]) == S[x].size())
+    result = *(S[x].begin());
   else
-    return {-1, -1};
+    result = {-1, -1};
+
+  removeSpinLock[x] = true;
+  return result;
 }
 
 auto findMax(int curr, int method) {
@@ -137,8 +151,14 @@ void processNode(int method, bool isFirstRound) {
         if (y.second != -1)
           T[y.second]--;
         S[x->second].insert({x->first, curr});
+
+        do {
+          expected = true;
+          removeSpinLock[x->second].compare_exchange_weak(expected, false);
+        } while (expected == false);
         if (y.second != -1)
           S[x->second].erase(S[x->second].begin());
+        removeSpinLock[x->second] = true;
         spinLock[x->second] = true;
 
         if (y.second != -1) {
@@ -170,9 +190,11 @@ int main(int argc, char** argv) {
   lockR = true;
   lastProcessed = new set<pair<int, int>>::reverse_iterator[N.size()];
   T = new atomic<unsigned int>[N.size()];
+
   spinLock = new atomic<bool>[N.size()];
+  removeSpinLock = new atomic<bool>[N.size()];
   for (unsigned int i = 0; i < N.size(); i++)
-    spinLock[i] = true;
+    spinLock[i] = removeSpinLock[i] = true;
 
   for (int method = 0; method <= blimit; method++) {
     S = new set<pair<int, int>, setComp>[N.size()];
