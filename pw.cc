@@ -167,8 +167,8 @@ int main(int argc, char** argv) {
   auto t1 = std::chrono::high_resolution_clock::now();
   std::ios_base::sync_with_stdio(0);
 
-  int blimit = atoi(argv[3]);
-  int threadsLimit = atoi(argv[1]);
+  int blimit = std::stoi(argv[3]);
+  int threadsLimit = std::stoi(argv[1]);
   readGraphAndPrepare(argv[2]);
 
   lockR = true;
