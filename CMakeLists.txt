@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 3.1)
-project (MIMUW-CPCPP-lab1 CXX)
+project (MIMUW-adorate CXX)
 
 find_package ( Threads REQUIRED )
 
