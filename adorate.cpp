@@ -18,6 +18,14 @@ using std::pair;
 using std::vector;
 using std::atomic;
 
+// unsigned int bvalue(unsigned int method, unsigned long long node_id) {
+//   switch (method) {
+//     default: return (2 * node_id + method) % 10;
+//     case 0: return 4;
+//     case 1: return 7;
+//   }
+// }
+
 vector<int> *Q = new vector<int>(), *R = new vector<int>();
 vector<int> mapping; // new node nr -> node nr
 struct setComp {
@@ -59,29 +67,24 @@ void readGraphAndPrepare(char* fileName) {
   }
 }
 
-inline int sLast(int x, int method) {
+inline pair<int, int> sLast(int x, int method) {
   if (bvalue(method, mapping[x]) == S[x].size())
-    return S[x].begin()->second;
+    return *(S[x].begin());
   else
-    return -1;
-}
-
-inline int wSLast(int x, int method) {
-  if (bvalue(method, mapping[x]) == S[x].size())
-    return S[x].begin()->first;
-  else
-    return -1;
+    return {-1, -1};
 }
 
 auto findMax(int curr, int method) {
   auto i = lastProcessed[curr];
   while (i != N[curr].rend()) {
-    if (S[i->second].find({i->first, curr}) == S[i->second].end() && bvalue(method, mapping[i->second]) != 0) // TODO usunac != 0
-      if (i->first > wSLast(i->second, method) ||
-          (wSLast(i->second, method) == i->first && mapping[curr] > mapping[sLast(i->second, method)])) {
+    if (S[i->second].find({i->first, curr}) == S[i->second].end() && bvalue(method, mapping[i->second]) != 0) { // TODO usunac != 0
+      auto last = sLast(i->second, method);
+      if (i->first > last.first ||
+          (last.first == i->first && mapping[curr] > mapping[last.second])) {
         lastProcessed[curr] = ++i;
         return --i;
       }
+    }
     i++;
   }
   lastProcessed[curr] = N[curr].rend();
@@ -134,39 +137,38 @@ void processNode(int method, bool isFirstRound) {
         spinLock[x->second].compare_exchange_weak(expected, false);
       } while (expected == false);
 
-      int y = sLast(x->second, method);
+      auto y = sLast(x->second, method);
       // is still eligible?
-      if (x->first > wSLast(x->second, method) ||
-          (wSLast(x->second, method) == x->first && mapping[curr] > mapping[y])) {
+      if (x->first > y.first ||
+          (y.first== x->first && mapping[curr] > mapping[y.second])) {
         T[curr]++;
-        if (y != -1)
-          T[y]--;
+        if (y.second != -1)
+          T[y.second]--;
         S[x->second].insert({x->first, curr});
-        if (y != -1)
+        if (y.second != -1)
           S[x->second].erase(S[x->second].begin());
         spinLock[x->second] = true;
 
-
-        if (y != -1) {
+        if (y.second != -1) {
           do {
             expected = true;
             lockR.compare_exchange_weak(expected, false);
           } while (expected == false);
-          if (!inR[y]) {
-            R->push_back(y);
-            inR[y] = true;
+          if (!inR[y.second]) {
+            R->push_back(y.second);
+            inR[y.second] = true;
           }
           lockR = true;
         }
       }
         else
       spinLock[x->second] = true;
-     }
+    }
   }
 }
 
 int main(int argc, char** argv) {
-  auto t1 = std::chrono::high_resolution_clock::now();
+  //auto t1 = std::chrono::high_resolution_clock::now();
   std::ios_base::sync_with_stdio(0);
 
   int blimit = std::stoi(argv[3]);
@@ -223,6 +225,6 @@ int main(int argc, char** argv) {
   delete Q;
   delete R;
 
-  cout << "time: " << std::chrono::duration_cast<std::chrono::nanoseconds>(
-    std::chrono::high_resolution_clock::now() - t1).count() / (double)1000000000 << "\n";
+  // cout << "time: " << std::chrono::duration_cast<std::chrono::nanoseconds>(
+  //   std::chrono::high_resolution_clock::now() - t1).count() / (double)1000000000 << "\n";
 }
