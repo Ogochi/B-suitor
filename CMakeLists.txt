@@ -4,7 +4,7 @@ project (MIMUW-CPCPP-lab1 CXX)
 find_package ( Threads REQUIRED )
 
 set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_FLAGS "-g -O2 -Wall")
+set(CMAKE_CXX_FLAGS "-O2")
 
 # http://stackoverflow.com/questions/10555706/
 macro (add_executable _name)
@@ -15,6 +15,6 @@ macro (add_executable _name)
     endif()
 endmacro()
 
-add_executable(pw pw.cc)
+add_executable(adorate adorate.cpp blimit.cpp)
 
 install(TARGETS DESTINATION .)
