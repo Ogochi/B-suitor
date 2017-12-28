@@ -18,14 +18,6 @@ using std::pair;
 using std::vector;
 using std::atomic;
 
-// unsigned int bvalue(unsigned int method, unsigned long long node_id) {
-//   switch (method) {
-//     default: return (2 * node_id + method) % 10;
-//     case 0: return 4;
-//     case 1: return 7;
-//   }
-// }
-
 vector<int> *Q = new vector<int>(), *R = new vector<int>();
 vector<int> mapping; // new node nr -> node nr
 struct setComp {
