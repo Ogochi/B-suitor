@@ -189,7 +189,7 @@ int main(int argc, char** argv) {
       nodesQueue = 0;
 
       if (firstRound)
-        howManyThreadsToMake = std::min((int)N.size() - 1, threadsLimit - 1);
+        howManyThreadsToMake = std::min((int)N.size(), threadsLimit - 1);
       else
         howManyThreadsToMake = std::min((int)Q->size(), threadsLimit - 1);
 
