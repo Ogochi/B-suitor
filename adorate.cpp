@@ -19,7 +19,7 @@ using std::vector;
 using std::atomic;
 
 vector<int> *Q = new vector<int>(), *R = new vector<int>();
-vector<int> mapping; // new node nr -> node nr
+vector<int> mapping; // nowy node nr -> stary node nr
 struct setComp {
   bool operator() (const pair<int, int>& a, const pair<int, int>& b) {
     if (a.first == b.first)
@@ -28,13 +28,14 @@ struct setComp {
       return a.first < b.first;
   }
 };
-vector<set<pair<int, int>, setComp>> N; // set<waga - nr sasiada>
-set<pair<int, int>, setComp> *S; // set<waga - nr sasiada>
+vector<set<pair<int, int>, setComp>> N; // set<waga , nr sasiada>
+set<pair<int, int>, setComp> *S; // set<waga , nr sasiada>
+atomic<unsigned int> *T; // ilosc sasiadow
 set<pair<int, int>>::reverse_iterator *lastProcessed;
 int threadsLimit;
 
 void readGraphAndPrepare(char* fileName) {
-  map<int, int> helper; // node nr - new node nr
+  map<int, int> helper; // stary node nr -> nowy node nr
   int newNodeNr = 0;
   std::ifstream infile(fileName);
 
@@ -132,7 +133,6 @@ int sum() {
   return wholeSum / 2;
 }
 
-atomic<unsigned int> *T; // ilosc sasiadow
 atomic<bool> lockR;
 atomic<bool> *spinLock;
 atomic<int> nodesQueue;
