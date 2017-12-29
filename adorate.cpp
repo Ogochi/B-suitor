@@ -31,6 +31,7 @@ struct setComp {
 vector<set<pair<int, int>, setComp>> N; // set<waga - nr sasiada>
 set<pair<int, int>, setComp> *S; // set<waga - nr sasiada>
 set<pair<int, int>>::reverse_iterator *lastProcessed;
+int threadsLimit;
 
 void readGraphAndPrepare(char* fileName) {
   map<int, int> helper; // node nr - new node nr
@@ -97,12 +98,38 @@ auto findMax(int curr, int method) {
   return N[curr].rend();
 }
 
+atomic<int> summingQueue;
+atomic<int> wholeSum;
+
+void summing() {
+  int localSum = 0;
+
+  while (true) {
+    int curr = summingQueue.fetch_add(1);
+    if (curr >= N.size())
+      break;
+
+    for (auto i : S[curr])
+      localSum += i.first;
+  }
+
+  wholeSum += localSum;
+}
+
 int sum() {
-  int sum = 0;
-  for (unsigned int i = 0; i < N.size(); i++)
-    for (auto j : S[i])
-      sum += j.first;
-  return sum;
+  wholeSum = 0;
+  summingQueue = 0;
+  int howManyThreadsToMake = std::min(threadsLimit - 1, (int)N.size() - 1);
+
+  std::thread threads[howManyThreadsToMake];
+  for (int i = 0; i < howManyThreadsToMake; i++)
+    threads[i] = std::thread{ []{ summing(); }};
+  summing();
+
+  for (int i = 0; i < howManyThreadsToMake; i++)
+    threads[i].join();
+
+  return wholeSum / 2;
 }
 
 atomic<unsigned int> *T; // ilosc sasiadow
@@ -184,7 +211,7 @@ int main(int argc, char** argv) {
   //std::ios_base::sync_with_stdio(0); // TODO
 
   int blimit = std::stoi(argv[3]);
-  int threadsLimit = std::stoi(argv[1]);
+  threadsLimit = std::stoi(argv[1]);
   readGraphAndPrepare(argv[2]);
 
   lockR = true;
@@ -211,13 +238,13 @@ int main(int argc, char** argv) {
       nodesQueue = 0;
 
       if (firstRound)
-        howManyThreadsToMake = std::min((int)N.size(), threadsLimit - 1);
+        howManyThreadsToMake = std::min((int)N.size() - 1, threadsLimit - 1);
       else
-        howManyThreadsToMake = std::min((int)Q->size(), threadsLimit - 1);
+        howManyThreadsToMake = std::min((int)Q->size() - 1, threadsLimit - 1);
 
       std::thread threads[howManyThreadsToMake];
       for (int i = 0; i < howManyThreadsToMake; i++)
-        threads[i] = std::thread{ [method, firstRound]{processNode(method, firstRound); }};
+        threads[i] = std::thread{ [method, firstRound]{ processNode(method, firstRound); }};
 
       processNode(method, firstRound);
       firstRound = false;
@@ -229,7 +256,7 @@ int main(int argc, char** argv) {
       Q = R;
       R = new vector<int>();
     }
-    cout << sum() / 2 << "\n";
+    cout << sum() << "\n";
     delete [] inR;
     delete [] S;
   }
