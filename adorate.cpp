@@ -214,7 +214,10 @@ int main(int argc, char** argv) {
   lockR = true;
   lastProcessed = new set<pair<int, int>>::reverse_iterator[N.size()];
   T = new atomic<unsigned int>[N.size()];
+
   spinLock = new atomic<bool>[N.size()];
+  for (unsigned int i = 0; i < N.size(); i++)
+    spinLock[i] = true;
 
   for (int method = 0; method <= blimit; method++) {
     S = new set<pair<int, int>, setComp>[N.size()];
