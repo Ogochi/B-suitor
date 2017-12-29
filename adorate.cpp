@@ -99,40 +99,6 @@ auto findMax(int curr, int method) {
   return N[curr].rend();
 }
 
-atomic<int> summingQueue;
-atomic<int> wholeSum;
-
-void summing() {
-  int localSum = 0;
-
-  while (true) {
-    int curr = summingQueue.fetch_add(1);
-    if (curr >= N.size())
-      break;
-
-    for (auto i : S[curr])
-      localSum += i.first;
-  }
-
-  wholeSum += localSum;
-}
-
-int sum() {
-  wholeSum = 0;
-  summingQueue = 0;
-  int howManyThreadsToMake = std::min(threadsLimit - 1, (int)N.size() - 1);
-
-  std::thread threads[howManyThreadsToMake];
-  for (int i = 0; i < howManyThreadsToMake; i++)
-    threads[i] = std::thread{ []{ summing(); }};
-  summing();
-
-  for (int i = 0; i < howManyThreadsToMake; i++)
-    threads[i].join();
-
-  return wholeSum / 2;
-}
-
 atomic<bool> lockR;
 atomic<bool> *spinLock;
 atomic<int> nodesQueue;
@@ -204,6 +170,40 @@ void processNode(int method, bool isFirstRound) {
       spinLock[x->second] = true;
     }
   }
+}
+
+atomic<int> summingQueue;
+atomic<int> wholeSum;
+
+void summing() {
+  int localSum = 0;
+
+  while (true) {
+    int curr = summingQueue.fetch_add(1);
+    if (curr >= N.size())
+      break;
+
+    for (auto i : S[curr])
+      localSum += i.first;
+  }
+
+  wholeSum += localSum;
+}
+
+int sum() {
+  wholeSum = 0;
+  summingQueue = 0;
+  int howManyThreadsToMake = std::min(threadsLimit - 1, (int)N.size() - 1);
+
+  std::thread threads[howManyThreadsToMake];
+  for (int i = 0; i < howManyThreadsToMake; i++)
+    threads[i] = std::thread{ []{ summing(); }};
+  summing();
+
+  for (int i = 0; i < howManyThreadsToMake; i++)
+    threads[i].join();
+
+  return wholeSum / 2;
 }
 
 int main(int argc, char** argv) {
