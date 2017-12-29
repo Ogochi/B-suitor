@@ -151,14 +151,14 @@ void processNode(int method, bool isFirstRound) {
         if (y.second != -1)
           T[y.second]--;
         S[x->second].insert({x->first, curr});
-
-        do {
-          expected = true;
-          removeSpinLock[x->second].compare_exchange_weak(expected, false);
-        } while (expected == false);
-        if (y.second != -1)
+        if (y.second != -1) {
+          do {
+            expected = true;
+            removeSpinLock[x->second].compare_exchange_weak(expected, false);
+          } while (expected == false);
           S[x->second].erase(S[x->second].begin());
-        removeSpinLock[x->second] = true;
+          removeSpinLock[x->second] = true;
+        }
         spinLock[x->second] = true;
 
         if (y.second != -1) {
@@ -180,8 +180,8 @@ void processNode(int method, bool isFirstRound) {
 }
 
 int main(int argc, char** argv) {
-  //auto t1 = std::chrono::high_resolution_clock::now();
-  std::ios_base::sync_with_stdio(0);
+  auto t1 = std::chrono::high_resolution_clock::now();
+  //std::ios_base::sync_with_stdio(0); // TODO
 
   int blimit = std::stoi(argv[3]);
   int threadsLimit = std::stoi(argv[1]);
@@ -239,6 +239,6 @@ int main(int argc, char** argv) {
   delete Q;
   delete R;
 
-  // cout << "time: " << std::chrono::duration_cast<std::chrono::nanoseconds>(
-  //   std::chrono::high_resolution_clock::now() - t1).count() / (double)1000000000 << "\n";
+   cout << "time: " << std::chrono::duration_cast<std::chrono::nanoseconds>(
+     std::chrono::high_resolution_clock::now() - t1).count() / (double)1000000000 << "\n";
 }
