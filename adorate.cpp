@@ -59,6 +59,8 @@ void readGraphAndPrepare(char* fileName) {
     N[itFrom->second].insert({w, itTo->second});
     N[itTo->second].insert({w, itFrom->second});
   }
+
+  infile.close();
 }
 
 atomic<bool> *removeSpinLock;
