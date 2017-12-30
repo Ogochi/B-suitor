@@ -204,8 +204,7 @@ int sum() {
 }
 
 int main(int argc, char** argv) {
-  auto t1 = std::chrono::high_resolution_clock::now();
-  //std::ios_base::sync_with_stdio(0); // TODO
+  std::ios_base::sync_with_stdio(0);
 
   int blimit = std::stoi(argv[3]);
   threadsLimit = std::stoi(argv[1]);
@@ -261,7 +260,4 @@ int main(int argc, char** argv) {
   delete [] lastProcessed;
   delete Q;
   delete R;
-
-   cout << "time: " << std::chrono::duration_cast<std::chrono::nanoseconds>(
-     std::chrono::high_resolution_clock::now() - t1).count() / (double)1000000000 << "\n";
 }
