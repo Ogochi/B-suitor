@@ -8,6 +8,7 @@
 #include <string>
 #include <chrono>
 #include <algorithm>
+#include <cassert>
 
 #include "blimit.hpp"
 
@@ -38,6 +39,8 @@ void readGraphAndPrepare(char* fileName) {
   map<int, int> helper; // stary node nr -> nowy node nr
   int newNodeNr = 0;
   std::ifstream infile(fileName);
+  map<int, set<int>> debug;
+  map<pair<int, int>, int> paraWaga;
 
   while(infile.peek() == '#')
     infile.ignore(std::numeric_limits<std::streamsize>::max(), infile.widen('\n'));
@@ -54,6 +57,22 @@ void readGraphAndPrepare(char* fileName) {
       N.push_back(set<pair<int, int>, setComp>());
       mapping.push_back(to);
       itTo = helper.insert({to, newNodeNr++}).first;
+    }
+
+    if (debug.find(to) == debug.end()) {
+      debug.insert({to, set<int>()});
+      debug[to].insert(from);
+    } else {
+      if (debug[to].find(from) != debug[to].end()) {
+        cout << "skierowany graf!!!\n";
+        if (paraWaga[{from, to}] != w)
+          cout << "sabotaz!\n";
+      } else {
+        debug[to].insert(from);
+        debug[from].insert(to);
+        paraWaga.insert({{to, from}, w});
+        paraWaga.insert({{from, to}, w});
+      }
     }
 
     N[itFrom->second].insert({w, itTo->second});
@@ -203,6 +222,14 @@ int sum() {
   return wholeSum / 2;
 }
 
+void test() {
+  for (int i = 0; i < N.size(); i++) {
+      assert(S[i].size() == T[i]);
+      if (S[i].size() != T[i])
+        cout << "alert!\n";
+  }
+}
+
 int main(int argc, char** argv) {
   auto t1 = std::chrono::high_resolution_clock::now();
   //std::ios_base::sync_with_stdio(0); // TODO
@@ -253,6 +280,7 @@ int main(int argc, char** argv) {
       R = new vector<int>();
     }
     cout << sum() << "\n";
+    test();
     delete [] inR;
     delete [] S;
   }
@@ -262,6 +290,6 @@ int main(int argc, char** argv) {
   delete Q;
   delete R;
 
-   cout << "time: " << std::chrono::duration_cast<std::chrono::nanoseconds>(
-     std::chrono::high_resolution_clock::now() - t1).count() / (double)1000000000 << "\n";
+   //cout << "time: " << std::chrono::duration_cast<std::chrono::nanoseconds>(
+  //   std::chrono::high_resolution_clock::now() - t1).count() / (double)1000000000 << "\n";
 }
