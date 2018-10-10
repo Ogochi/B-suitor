@@ -3,7 +3,7 @@ It's a project done as a part of __Concurrent Programming Class__ at University 
 
 Program is meant to solve __B-Matching Problem__. It is a generalisation of ordinary matching problem. 
 Everything is the same despite the fact you can match vertice `v` in graph with at most `b(v)` other vertices(`b(v)` is provided function).
-Project has focus on undirected wigthed graphs. 
+Project has focus on undirected wighted graphs. 
 
 Our aim was to find approximation(not less than half of the best solution) 
 of matching with the greatest sum of weights on edges. There was made such a decision, beacause precise algorithms are slow or really complex.
