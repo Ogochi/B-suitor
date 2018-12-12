@@ -6,7 +6,7 @@ Everything is the same despite the fact you can match vertice `v` in graph with 
 Project has focus on undirected wighted graphs. 
 
 Our aim was to find approximation(not less than half of the best solution) 
-of matching with the greatest sum of weights on edges. There was made such a decision, beacause precise algorithms are slow or really complex.
+of matching with the greatest sum of weights on edges. There was made such a decision, because precise algorithms are slow or really complex.
 
 ## Algorithm
 Algorithm we were supposed to use is described in detail [here](https://www.cs.purdue.edu/homes/apothen/Papers/bMatching-SISC-2016.pdf).
